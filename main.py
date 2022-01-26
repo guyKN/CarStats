@@ -13,7 +13,6 @@ from paths import video_path, image_path, save_video_path, save_data_path
 
 LINE = ((0.14765625, 0.138671875), (0.00234375, 0.166015625))
 
-
 def test_image():
     model = load_model(confidence_threshold=0.1, iou_threshold=0.3, class_agnostic=True)
     result = model(image_path)
