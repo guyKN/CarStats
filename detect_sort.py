@@ -25,25 +25,19 @@ def detect_from_video(model, video: VideoReader, motion_tracker_max_age=10, iou_
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         detections = model(frame)
         if use_sort:
-            detections_with_tracking = motion_tracker.update(detections.pred[0].cpu().numpy())
-            detections_df = pd.DataFrame(detections_with_tracking,
+            detections = motion_tracker.update(detections.pred[0].cpu().numpy())
+            detections = pd.DataFrame(detections,
                                          columns=["x_min", "y_min", "x_max", "y_max", "object_id"])
-            detections_df = detections_df.assign(
-                x_center=(detections_df["x_min"] + detections_df["x_max"]) / 2,
-                y_center=(detections_df["y_min"] + detections_df["y_max"]) / 2,
-                width=detections_df["x_max"] - detections_df["x_min"],
-                height=detections_df["y_max"] - detections_df["y_min"],
-                frame_num=frame_num
-            )
 
-            detections_df["x_min"] = detections_df["x_min"] / frame_width
-            detections_df["x_max"] = detections_df["x_max"] / frame_width
-            detections_df["y_min"] = detections_df["y_min"] / frame_height
-            detections_df["y_max"] = detections_df["y_max"] / frame_height
-            detections_df["x_center"] = detections_df["x_center"] / frame_width
-            detections_df["y_center"] = detections_df["y_center"] / frame_height
-            detections_df["width"] = detections_df["width"] / frame_width
-            detections_df["height"] = detections_df["height"] / frame_height
+            detections_df = pd.DataFrame.from_dict({
+                "object_id": detections["object_id"],
+                "x_center": (detections["x_min"] + detections["x_max"]) / (2*frame_width),
+                "y_center": (detections["y_min"] + detections["y_max"]) / (2*frame_height),
+                "width": (detections["x_max"] - detections["x_min"])/frame_width,
+                "height": (detections["y_max"] - detections["y_min"])/frame_height,
+                "frame_num": frame_num
+            })
+            detections_df = detections_df.astype({"object_id": int}, copy=True)
         else:
             detections_without_tracking = detections.pandas().xywhn[0]
             detections_df = pd.DataFrame.from_dict({
